@@ -48,57 +48,6 @@ class HDCClassificador:
         self.vetores_posicoes = {}   # Vetores aleatórios para posições dos atributos
         self.prototipos_classes = {}  # Vetores protótipos de cada classe
 
-    # def _codificar_exemplo(self, exemplo):
-    #     vetores = []
-    #     for i, valor in enumerate(exemplo):
-    #         vetor_niveis = []
-    #         for nivel in range(self.n_niveis):
-    #             chave = (i, nivel)
-    #             if chave not in self.vetores_atributos:
-    #                 self.vetores_atributos[chave] = gerar_vetor_binario()
-    #             vetor_niveis.append(self.vetores_atributos[chave])
-
-    #         vetor_termo = codificacao_termometro(valor, self.n_niveis)
-    #         vetor_codificado = bundling([
-    #             vetor_niveis[j] * vetor_termo[j] for j in range(self.n_niveis)
-    #         ])
-    #         vetores.append(vetor_codificado)
-    #     return bundling(vetores)
-    
-    # def _codificar_exemplo(self, exemplo):
-    #     vetores = []
-    #     for i, valor in enumerate(exemplo):
-
-    #         # Vetor de posição para o atributo i
-    #         if i not in self.vetores_posicoes:
-    #             self.vetores_posicoes[i] = gerar_vetor_binario(self.DIMENSION)
-    #         vetor_posicao = self.vetores_posicoes[i]
-
-    #         # Vetores de níveis
-    #         for nivel in range(self.n_niveis):
-    #             chave = (i, nivel)
-    #             if chave not in self.vetores_atributos:
-    #                 self.vetores_atributos[chave] = gerar_vetor_binario(self.DIMENSION)
-
-    #         # Codificação termômetro
-    #         vetor_termo = codificacao_termometro(valor, self.n_niveis)
-
-    #         # Bundling dos níveis ativos com binding explícito
-    #         vetores_nivel = []
-    #         for nivel in range(self.n_niveis):
-    #             vetor_nivel = self.vetores_atributos[(i, nivel)]
-    #             fator = vetor_termo[nivel]
-    #             if fator == 1:
-    #                 vetor_bind = binding(vetor_nivel, vetor_posicao)
-    #                 vetores_nivel.append(vetor_bind)
-    #             # Níveis não ativos podem ser ignorados ou tratados com -1 se desejar
-
-    #         if vetores_nivel:
-    #             vetor_atributo = bundling(vetores_nivel)
-    #             vetores.append(vetor_atributo)
-
-    #     return bundling(vetores)
-    
     def _codificar_exemplo(self, exemplo):
         vetores = []
 
@@ -209,17 +158,6 @@ def avaliar_modelo(nome, y_true, y_pred, nomes_classes):
     plt.xlabel('Previsto')
     plt.show()
     
-# def other_observations():
-#     #Exibir algumas previsões
-#     for i in range(5):
-#         print(f"Verdadeiro: {nomes_classes[y_test[i]]}, Previsto: {nomes_classes[predicoes[i]]}")
-#     print(f"Predições: {predicoes}")
-#     print(f"Rótulos reais: {y_test}")
-#     print(f"Classes únicas: {np.unique(y)}")
-#     print(f"Classes previstas: {np.unique(predicoes)}")
-#     print(f"Prototipos de classes: {hdc.prototipos_classes}")
-#     print(f"Vetores de atributos: {hdc.vetores_atributos}")
-
 if __name__ == "__main__":
     PRINT_OTHER_OBSERVATIONS = False  # Variável para controlar a impressão de observações adicionais
     DIMENSION = 10000  # Definir a dimensionalidade dos vetores hiperdimensionais com tamanho típico em HDC:10000
@@ -253,6 +191,3 @@ if __name__ == "__main__":
     hdc_ngram.treinar(X_train, y_train)
     pred_ngram = hdc_ngram.prever(X_test)
     avaliar_modelo("HDC - N-gram based", y_test, pred_ngram, nomes_classes)
-
-    
-    
