@@ -1,0 +1,258 @@
+from collections import defaultdict
+import matplotlib.pyplot as plt
+import numpy as np
+import seaborn as sns
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
+
+# Função para gerar um vetor binário aleatório {-1, 1}
+def gerar_vetor_binario(dimension = 10000):
+    return np.random.choice([-1, 1], size=dimension)
+
+#Binding: vinculativo;
+#Binding → Liga partes específicas para formar estruturas complexas (Ex: cor + forma → maçã vermelha)
+# Função de binding: combinação (associação) via multiplicação elemento a elemento (equivalente a XOR binário)
+def binding(v1, v2):
+    return v1 * v2
+
+#Bundling: agrupamento.
+#Bundling → Resume várias instâncias ou ocorrências para formar um "prototipo" ou representação média (Ex: ideia geral do que é uma maçã).
+# Função de bundling: combinação por soma e threshold.
+# Bundling (combinação) por soma + threshold
+def bundling(vetores):
+    soma = np.sum(vetores, axis=0)
+    return np.where(soma >= 0, 1, -1)
+
+# Similaridade cosseno
+def similaridade(v1, v2):
+    return np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))
+
+# Função de codificação termômetro para variáveis contínuas
+def codificacao_termometro(valor, n_niveis):
+    limite_superior = n_niveis - 1
+    nivel_ativo = int(round(valor * limite_superior))
+    vetor = np.full(n_niveis, -1)
+    vetor[:nivel_ativo + 1] = 1
+    return vetor
+
+# Classe do classificador HDC
+class HDCClassificador:
+    def __init__(self, d_dimensao=10000, n_niveis=10, modo = 'record'):
+        self.DIMENSION = d_dimensao
+        self.n_niveis = n_niveis
+        self.modo = modo  # 'record' ou 'ngram'
+        self.vetores_atributos = {}  # Vetores aleatórios para cada atributo e nível
+        self.vetores_posicoes = {}   # Vetores aleatórios para posições dos atributos
+        self.prototipos_classes = {}  # Vetores protótipos de cada classe
+
+    # def _codificar_exemplo(self, exemplo):
+    #     vetores = []
+    #     for i, valor in enumerate(exemplo):
+    #         vetor_niveis = []
+    #         for nivel in range(self.n_niveis):
+    #             chave = (i, nivel)
+    #             if chave not in self.vetores_atributos:
+    #                 self.vetores_atributos[chave] = gerar_vetor_binario()
+    #             vetor_niveis.append(self.vetores_atributos[chave])
+
+    #         vetor_termo = codificacao_termometro(valor, self.n_niveis)
+    #         vetor_codificado = bundling([
+    #             vetor_niveis[j] * vetor_termo[j] for j in range(self.n_niveis)
+    #         ])
+    #         vetores.append(vetor_codificado)
+    #     return bundling(vetores)
+    
+    # def _codificar_exemplo(self, exemplo):
+    #     vetores = []
+    #     for i, valor in enumerate(exemplo):
+
+    #         # Vetor de posição para o atributo i
+    #         if i not in self.vetores_posicoes:
+    #             self.vetores_posicoes[i] = gerar_vetor_binario(self.DIMENSION)
+    #         vetor_posicao = self.vetores_posicoes[i]
+
+    #         # Vetores de níveis
+    #         for nivel in range(self.n_niveis):
+    #             chave = (i, nivel)
+    #             if chave not in self.vetores_atributos:
+    #                 self.vetores_atributos[chave] = gerar_vetor_binario(self.DIMENSION)
+
+    #         # Codificação termômetro
+    #         vetor_termo = codificacao_termometro(valor, self.n_niveis)
+
+    #         # Bundling dos níveis ativos com binding explícito
+    #         vetores_nivel = []
+    #         for nivel in range(self.n_niveis):
+    #             vetor_nivel = self.vetores_atributos[(i, nivel)]
+    #             fator = vetor_termo[nivel]
+    #             if fator == 1:
+    #                 vetor_bind = binding(vetor_nivel, vetor_posicao)
+    #                 vetores_nivel.append(vetor_bind)
+    #             # Níveis não ativos podem ser ignorados ou tratados com -1 se desejar
+
+    #         if vetores_nivel:
+    #             vetor_atributo = bundling(vetores_nivel)
+    #             vetores.append(vetor_atributo)
+
+    #     return bundling(vetores)
+    
+    def _codificar_exemplo(self, exemplo):
+        vetores = []
+
+        if self.modo == 'record':
+            for i, valor in enumerate(exemplo):
+                if i not in self.vetores_posicoes:
+                    self.vetores_posicoes[i] = gerar_vetor_binario(self.DIMENSION)
+                vetor_posicao = self.vetores_posicoes[i]
+
+                for nivel in range(self.n_niveis):
+                    chave = (i, nivel)
+                    if chave not in self.vetores_atributos:
+                        self.vetores_atributos[chave] = gerar_vetor_binario(self.DIMENSION)
+
+                vetor_termo = codificacao_termometro(valor, self.n_niveis)
+                vetores_nivel = []
+                for nivel in range(self.n_niveis):
+                    if vetor_termo[nivel] == 1:
+                        vetor_nivel = self.vetores_atributos[(i, nivel)]
+                        vetor_bind = binding(vetor_nivel, vetor_posicao)
+                        vetores_nivel.append(vetor_bind)
+
+                if vetores_nivel:
+                    vetor_atributo = bundling(vetores_nivel)
+                    vetores.append(vetor_atributo)
+
+        elif self.modo == 'ngram':
+            for i in range(len(exemplo) - 1):
+                valor1, valor2 = exemplo[i], exemplo[i + 1]
+
+                if i not in self.vetores_posicoes:
+                    self.vetores_posicoes[i] = gerar_vetor_binario(self.DIMENSION)
+                if (i + 1) not in self.vetores_posicoes:
+                    self.vetores_posicoes[i + 1] = gerar_vetor_binario(self.DIMENSION)
+
+                vetor_pos1 = self.vetores_posicoes[i]
+                vetor_pos2 = self.vetores_posicoes[i + 1]
+
+                for nivel1 in range(self.n_niveis):
+                    chave1 = (i, nivel1)
+                    if chave1 not in self.vetores_atributos:
+                        self.vetores_atributos[chave1] = gerar_vetor_binario(self.DIMENSION)
+                for nivel2 in range(self.n_niveis):
+                    chave2 = (i + 1, nivel2)
+                    if chave2 not in self.vetores_atributos:
+                        self.vetores_atributos[chave2] = gerar_vetor_binario(self.DIMENSION)
+
+                termo1 = codificacao_termometro(valor1, self.n_niveis)
+                termo2 = codificacao_termometro(valor2, self.n_niveis)
+
+                vetores_ngram = []
+                for n1 in range(self.n_niveis):
+                    for n2 in range(self.n_niveis):
+                        if termo1[n1] == 1 and termo2[n2] == 1:
+                            bind1 = binding(self.vetores_atributos[(i, n1)], vetor_pos1)
+                            bind2 = binding(self.vetores_atributos[(i + 1, n2)], vetor_pos2)
+                            ngram_bind = binding(bind1, bind2)
+                            vetores_ngram.append(ngram_bind)
+
+                if vetores_ngram:
+                    vetor_ngram_final = bundling(vetores_ngram)
+                    vetores.append(vetor_ngram_final)
+
+        return bundling(vetores)
+    
+    def treinar(self, X, y):
+        prototipos = defaultdict(list)
+        for exemplo, classe in zip(X, y):
+            vetor = self._codificar_exemplo(exemplo)
+            prototipos[classe].append(vetor)
+
+        self.prototipos_classes = {
+            classe: bundling(vetores) for classe, vetores in prototipos.items()
+        }
+
+    def prever(self, X):
+        predicoes = []
+        for exemplo in X:
+            vetor = self._codificar_exemplo(exemplo)
+            melhor_classe = None
+            maior_sim = -np.inf
+            for classe, prototipo in self.prototipos_classes.items():
+                sim = similaridade(vetor, prototipo)
+                if sim > maior_sim:
+                    maior_sim = sim
+                    melhor_classe = classe
+            predicoes.append(melhor_classe)
+        return predicoes
+    
+# Função de avaliação completa
+def avaliar_modelo(nome, y_true, y_pred, nomes_classes):
+    acc = accuracy_score(y_true, y_pred)
+    prec = precision_score(y_true, y_pred, average='macro', zero_division=0)
+    rec = recall_score(y_true, y_pred, average='macro', zero_division=0)
+    f1 = f1_score(y_true, y_pred, average='macro', zero_division=0)
+
+    print(f"\n=== {nome} ===")
+    print(f"Acurácia: {acc:.4f}")
+    print(f"Precisão: {prec:.4f}")
+    print(f"Recall: {rec:.4f}")
+    print(f"F1-score: {f1:.4f}")
+
+    cm = confusion_matrix(y_true, y_pred)
+    plt.figure(figsize=(5, 4))
+    sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=nomes_classes, yticklabels=nomes_classes)
+    plt.title(f'Matriz de Confusão - {nome}')
+    plt.ylabel('Verdadeiro')
+    plt.xlabel('Previsto')
+    plt.show()
+    
+# def other_observations():
+#     #Exibir algumas previsões
+#     for i in range(5):
+#         print(f"Verdadeiro: {nomes_classes[y_test[i]]}, Previsto: {nomes_classes[predicoes[i]]}")
+#     print(f"Predições: {predicoes}")
+#     print(f"Rótulos reais: {y_test}")
+#     print(f"Classes únicas: {np.unique(y)}")
+#     print(f"Classes previstas: {np.unique(predicoes)}")
+#     print(f"Prototipos de classes: {hdc.prototipos_classes}")
+#     print(f"Vetores de atributos: {hdc.vetores_atributos}")
+
+if __name__ == "__main__":
+    PRINT_OTHER_OBSERVATIONS = False  # Variável para controlar a impressão de observações adicionais
+    DIMENSION = 10000  # Definir a dimensionalidade dos vetores hiperdimensionais com tamanho típico em HDC:10000
+    # Carregar o dataset Iris
+    iris = load_iris()
+    X = iris.data
+    y = iris.target
+    nomes_classes = iris.target_names
+    N_NIVEIS = len(nomes_classes)**2  # Níveis de codificação termômetro
+    print(f"Classes: {nomes_classes}")
+    print(f"Dimensão dos vetores: {DIMENSION}")
+    print(f"Níveis de codificação: {N_NIVEIS}")
+    
+    # Separar treino e teste
+    scaler = MinMaxScaler()
+    X_normalizado = scaler.fit_transform(X)
+    X_train, X_test, y_train, y_test = train_test_split(X_normalizado, y, test_size=0.3, random_state=42, stratify=y)
+    
+    # Normalizar os dados entre 0 e 1
+    X_train = scaler.fit_transform(X_train)
+    X_test = scaler.transform(X_test)
+    
+        # Record-based
+    hdc_record = HDCClassificador(d_dimensao=DIMENSION, n_niveis=N_NIVEIS, modo='record')
+    hdc_record.treinar(X_train, y_train)
+    pred_record = hdc_record.prever(X_test)
+    avaliar_modelo("HDC - Record-based", y_test, pred_record, nomes_classes)
+
+    # N-gram based
+    hdc_ngram = HDCClassificador(d_dimensao=DIMENSION, n_niveis=N_NIVEIS, modo='ngram')
+    hdc_ngram.treinar(X_train, y_train)
+    pred_ngram = hdc_ngram.prever(X_test)
+    avaliar_modelo("HDC - N-gram based", y_test, pred_ngram, nomes_classes)
+
+    
+    
