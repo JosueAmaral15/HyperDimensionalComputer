@@ -198,9 +198,9 @@ if __name__ == "__main__":
     
     datasets = {
         'iris': 53,
-         'adult': 2,
-         'secondary_mushroom' : 848,
-         'cdc_diabetes_health': 891,
+        #'adult': 2,
+        #'secondary_mushroom' : 848,
+        #'cdc_diabetes_health': 891,
     }
     
     for dataset, id_dataset in datasets.items():
