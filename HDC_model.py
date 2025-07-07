@@ -161,34 +161,38 @@ def avaliar_modelo(nome, y_true, y_pred, nomes_classes, show_confusion_matrix=Tr
         plt.xlabel('Previsto')
         plt.show()
 
-def processar_id(identificador_dataset):
+def processar_id(identificador_dataset, limite_amostras=None):
     # Busca dataset pelo identificador da UCI
     dataset = fetch_ucirepo(id=identificador_dataset)
-    # Seleciona somente colunas numéricas
-    
+
     if dataset.data.targets is None:
         print(f"Dataset '{identificador_dataset}' não tem rótulo. Pulando.")
         return None, None, None, None
-    
+
     matriz_X = dataset.data.features.select_dtypes(include=[np.number]).dropna(axis=1).values
-    vetor_y = dataset.data.targets.iloc[:,0].astype('category').cat.codes.values
-    #nomes_colunas = dataset.data.features.columns.tolist()
-    nomes_classes = dataset.data.targets.iloc[:,0].astype('category').cat.categories.tolist()
+    vetor_y = dataset.data.targets.iloc[:, 0].astype('category').cat.codes.values
+    nomes_classes = dataset.data.targets.iloc[:, 0].astype('category').cat.categories.tolist()
     numero_classes = len(np.unique(vetor_y))
 
+    # Limitar a quantidade de amostras, se desejado
+    if limite_amostras is not None:
+        matriz_X = matriz_X[:limite_amostras]
+        vetor_y = vetor_y[:limite_amostras]
+
     # Divide entre treino e teste
-    # Separar treino e teste
     scaler = MinMaxScaler()
     X_normalizado = scaler.fit_transform(matriz_X)
-    X_train, X_test, y_train, y_test = train_test_split(X_normalizado, vetor_y, test_size=0.3, random_state=42, stratify=vetor_y)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X_normalizado, vetor_y, test_size=0.3, random_state=42, stratify=vetor_y
+    )
 
-    # Normalizar os dados entre 0 e 1
     X_train = scaler.fit_transform(X_train)
     X_test = scaler.transform(X_test)
 
     total_entradas = X_train.shape[1]
 
     return nomes_classes, numero_classes, X_train, y_train, Counter(y_train), X_test, y_test, Counter(y_test), total_entradas
+
     
 if __name__ == "__main__":
     PRINT_OTHER_OBSERVATIONS = False  # Variável para controlar a impressão de observações adicionais
@@ -198,9 +202,9 @@ if __name__ == "__main__":
     
     datasets = {
         'iris': 53,
-        #'adult': 2,
-        #'secondary_mushroom' : 848,
-        #'cdc_diabetes_health': 891,
+        'adult': 2,
+        'secondary_mushroom' : 848,
+        'cdc_diabetes_health': 891,
     }
     
     for dataset, id_dataset in datasets.items():
